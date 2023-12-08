@@ -15,7 +15,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
 using OmniSharp.Extensions.LanguageServer.Server;
 
-namespace DW2IDE.XmlLanguageServer;
+namespace DistantWorlds.IDE.XmlLanguageServer;
 
 public class XmlLanguageServer {
 

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 [PublicAPI]
 // ReSharper disable once InconsistentNaming

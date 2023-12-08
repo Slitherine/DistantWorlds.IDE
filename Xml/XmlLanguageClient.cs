@@ -13,7 +13,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Window;
 using OmniSharp.Extensions.LanguageServer.Protocol.Workspace;
 
-namespace DW2IDE.Xml;
+namespace DistantWorlds.IDE.Xml;
 
 public sealed class XmlLanguageClientFactory {
 

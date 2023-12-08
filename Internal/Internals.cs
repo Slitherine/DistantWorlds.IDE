@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 public static class Internals {
 

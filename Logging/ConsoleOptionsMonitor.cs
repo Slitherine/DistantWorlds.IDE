@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
-namespace DW2IDE.Logging;
+namespace DistantWorlds.IDE.Logging;
 
 internal sealed class ConsoleOptionsMonitor : IOptionsMonitor<ConsoleLoggerOptions> {
 

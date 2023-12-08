@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 [PublicAPI]
 [StructLayout(LayoutKind.Sequential)]

@@ -5,14 +5,14 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DW2IDE;
+using DistantWorlds.IDE;
 using Stride.Core;
 using Stride.Core.Serialization;
 using Stride.Core.Serialization.Contents;
 using Stride.Core.Streaming;
 using Stride.Graphics;
 
-namespace DW2IDE.Stride;
+namespace DistantWorlds.IDE.Stride;
 
 internal class ImageTextureSerializer : ContentSerializerBase<Image> {
 

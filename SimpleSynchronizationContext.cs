@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 public class SimpleSynchronizationContext : SynchronizationContext {
 

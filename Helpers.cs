@@ -3,13 +3,13 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using DW2IDE.Logging;
+using DistantWorlds.IDE.Logging;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.VisualStudio.Threading;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 [PublicAPI]
 public static class Helpers {

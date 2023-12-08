@@ -1,4 +1,4 @@
-﻿namespace DW2IDE;
+﻿namespace DistantWorlds.IDE;
 
 // DPI_AWARENESS_CONTEXT
 internal enum DpiAwarenessContext : int {

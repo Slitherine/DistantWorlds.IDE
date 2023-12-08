@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DW2IDE.Xml;
+namespace DistantWorlds.IDE.Xml;
 
 /// <summary>
 /// A wrapper around a native image build of the LemMinX XML Language Server.

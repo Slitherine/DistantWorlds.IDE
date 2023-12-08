@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 internal class User32 {
 

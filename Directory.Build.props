@@ -1,0 +1,6 @@
+﻿<Project>
+    <PropertyGroup>
+        <SolutionDir Condition="'$(SolutionDir)'==''">$(MsbuildThisFileDirectory)</SolutionDir>
+        <StrideVersion>4.1.0.1948</StrideVersion>
+    </PropertyGroup>
+</Project>

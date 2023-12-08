@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics;
 using System.Threading;
 using System.Threading.Tasks;
 using BCnEncoder.Shared;
-using DW2IDE.ImageSharp;
+using DistantWorlds.IDE.ImageSharp;
 using Microsoft.Toolkit.HighPerformance;
 using SixLabors.ImageSharp.PixelFormats;
 using Stride;
@@ -23,7 +23,7 @@ using Stride.Core.Serialization.Contents;
 using Stride.Core.Storage;
 using Stride.Graphics;
 
-namespace DW2IDE.Stride;
+namespace DistantWorlds.IDE.Stride;
 
 public class BundleManager {
 

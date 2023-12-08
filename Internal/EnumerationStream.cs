@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Text.Unicode;
 
-namespace DW2IDE;
+namespace DistantWorlds.IDE;
 
 public static class EnumerationStream {
 
