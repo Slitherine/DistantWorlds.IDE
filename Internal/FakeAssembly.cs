@@ -1,4 +1,3 @@
-using System;
 using System.Reflection;
 
 internal class FakeAssembly : Assembly {

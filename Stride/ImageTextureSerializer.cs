@@ -1,11 +1,9 @@
 ﻿// Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 
-using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DistantWorlds.IDE;
 using Stride.Core;
 using Stride.Core.Serialization;
 using Stride.Core.Serialization.Contents;
@@ -23,14 +21,14 @@ internal class ImageTextureSerializer : ContentSerializerBase<Image> {
   internal static readonly FakeType FakeTypeOfTexture = new FakeType("Stride.Graphics", "Texture", FakeTypeOfGraphicsResource);
 
   private static readonly FieldInfo ImageHelperImageDescriptionSerializerField
-    = typeof(ImageHelper).GetField("ImageDescriptionSerializer", BindingFlags.Public | BindingFlags.Static)!;
+    = typeof(ImageHelper).GetField("ImageDescriptionSerializer", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!;
 
   private static DataSerializer<ImageDescription> GetImageDescriptionSerializer()
     => (DataSerializer<ImageDescription>)ImageHelperImageDescriptionSerializerField.GetValue(null)!;
 
   private static readonly unsafe delegate*<Image, Image, void> InitializeImageFromImage
     = (delegate*<Image, Image, void>)
-    typeof(Image).GetMethod("InitializeFrom", BindingFlags.NonPublic | BindingFlags.Instance)!
+    typeof(Image).GetMethod("InitializeFrom", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
       .MethodHandle.GetFunctionPointer();
 
   // internal static void ComputePitch(PixelFormat fmt, int width, int height, out int rowPitch, out int slicePitch, out int widthCount, out int heightCount, PitchFlags flags = PitchFlags.None)
@@ -43,7 +41,7 @@ internal class ImageTextureSerializer : ContentSerializerBase<Image> {
 
   // internal unsafe Image(ImageDescription description, IntPtr dataPointer, int offset, GCHandle? handle, bool bufferIsDisposable, PitchFlags pitchFlags = PitchFlags.None, int rowStride = 0)
   private static readonly ConstructorInfo _ImageCtor
-    = typeof(Image).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {
+    = typeof(Image).GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {
       typeof(ImageDescription),
       typeof(IntPtr),
       typeof(int),
@@ -93,7 +91,8 @@ internal class ImageTextureSerializer : ContentSerializerBase<Image> {
 
         // Deserialize whole texture to image without streaming feature
         var contentSerializerContext = stream.Context.Get(ContentSerializerContext.ContentSerializerContextProperty);
-        DeserializeImage(contentSerializerContext.ContentManager, textureData, ref imageDescription, ref storageHeader);
+        var contentManager = contentSerializerContext?.ContentManager ?? context.ContentManager;
+        DeserializeImage(contentManager, textureData, ref imageDescription, ref storageHeader);
       }
     }
     else {

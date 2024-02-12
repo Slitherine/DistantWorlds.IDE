@@ -13,10 +13,10 @@ public partial record struct RgVector(float R, float G) : IPixel<RgVector> {
   private const float UShortMax = ushort.MaxValue;
 
   public static implicit operator Vector2(in RgVector color)
-    => Unsafe.As<RgVector, Vector2>(ref Unsafe.AsRef(color));
+    => Unsafe.As<RgVector, Vector2>(ref Unsafe.AsRef(in color));
 
   public static implicit operator RgVector(in Vector2 color)
-    => Unsafe.As<Vector2, RgVector>(ref Unsafe.AsRef(color));
+    => Unsafe.As<Vector2, RgVector>(ref Unsafe.AsRef(in color));
 
   public static RgVector operator *(in RgVector color, float scalar)
     => scalar * (Vector2)color;

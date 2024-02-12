@@ -13,10 +13,10 @@ public partial record struct RFloat(float R) : IPixel<RFloat> {
   private const float UShortMax = ushort.MaxValue;
 
   public static implicit operator float(in RFloat color)
-    => Unsafe.As<RFloat, float>(ref Unsafe.AsRef(color));
+    => Unsafe.As<RFloat, float>(ref Unsafe.AsRef(in color));
 
   public static implicit operator RFloat(in float color)
-    => Unsafe.As<float, RFloat>(ref Unsafe.AsRef(color));
+    => Unsafe.As<float, RFloat>(ref Unsafe.AsRef(in color));
 
   public static RFloat operator *(in RFloat color, float scalar)
     => scalar * (float)color;

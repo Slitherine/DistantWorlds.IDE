@@ -1,6 +1,4 @@
-using System;
 using System.Numerics;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -50,7 +48,7 @@ public struct GCHandle<T>
   public readonly nint Value => GCHandle.ToIntPtr(NonGeneric);
 
   public readonly nint AddrOfPinnedObject()
-    => Unsafe.AsRef(NonGeneric).AddrOfPinnedObject();
+    => Unsafe.AsRef(in NonGeneric).AddrOfPinnedObject();
 
   public void Free() => NonGeneric.Free();
 

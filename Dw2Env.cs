@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using GameFinder.RegistryUtils;
 using GameFinder.Common;
 using GameFinder.StoreHandlers.GOG;
@@ -13,11 +14,7 @@ using RegistryView = GameFinder.RegistryUtils.RegistryView;
 namespace DistantWorlds.IDE;
 
 [SuppressMessage("Usage", "VSTHRD001:Avoid legacy thread switching APIs")]
-public class Dw2Env {
-
-    public static void Init() {
-        /* kick off static init */
-    }
+public static partial class Dw2Env {
 
     public const int GogGameId = 1562671603;
 
@@ -45,12 +42,13 @@ public class Dw2Env {
 
     public static IGame? Game;
 
-    private OpenFileDialog _openFileDialog = new OpenFileDialog();
+    private static OpenFileDialog _openFileDialog;
 
     public static readonly string DefaultMatrixInstallerGameDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
         "Matrix Games", "Distant Worlds 2");
 
+    [SupportedOSPlatform("windows")]
     public static string? UserChosenGameDirectory {
         get => (string?)Registry.CurrentUser.GetValue(UserChosenGameDirectoryRegValuePath, null,
             RegistryValueOptions.DoNotExpandEnvironmentNames);
@@ -66,6 +64,9 @@ public class Dw2Env {
 
     public static string? MatrixInstallerRegistryGameDirectory {
         get {
+            if (!OperatingSystem.IsWindows())
+                return null;
+
             string? dw2PathFromReg = null;
             try {
                 using var w32HkLocalMac =
@@ -127,28 +128,34 @@ public class Dw2Env {
         var result = ofd.ShowDialog(null);
         if (result != DialogResult.Cancel) {
             GameDirectory = Path.GetDirectoryName(ofd.FileName);
-            UserChosenGameDirectory = GameDirectory;
+            if (OperatingSystem.IsWindows())
+                UserChosenGameDirectory = GameDirectory;
         }
 
         return true;
     }
 
     static Dw2Env() {
-        if (UserChosenGameDirectory is not null) {
+        EtoPlatform = new Eto.GtkSharp.Platform();
+        Application = new Application(EtoPlatform);
+        _openFileDialog = new OpenFileDialog();
+
+        if (OperatingSystem.IsWindows() && UserChosenGameDirectory is not null) {
             GameDirectory = UserChosenGameDirectory;
             CheckGameDirectory();
             return;
         }
 
         var fs = FileSystem.Shared;
-        var registry = WindowsRegistry.Shared;
+        var registry = OperatingSystem.IsWindows() ? WindowsRegistry.Shared : null;
         var steam = new SteamHandler(fs, registry);
+        // ReSharper disable once NotAccessedVariable // TODO: log any errors
         var steamDw2 = steam.FindOneGameById(AppId.From(SteamAppId), out var errors);
         if (steamDw2 is not null) {
             Game = steamDw2;
             GameDirectory = steamDw2.Path.GetFullPath();
         }
-        else {
+        else if (registry is not null) {
             var gog = new GOGHandler(registry, fs);
             var gogDw2 = gog.FindOneGameById(GOGGameId.From(GogGameId), out errors);
             if (gogDw2 is not null) {
@@ -179,6 +186,14 @@ public class Dw2Env {
         }
 
         PromptForGameDirectory(true);
+    }
+
+    public static readonly Application Application;
+
+    internal static Eto.GtkSharp.Platform EtoPlatform;
+
+    /// <see cref="M:DistantWorlds.IDE.Dw2Env.#cctor"/>
+    public static void Initialize() {
     }
 
 }

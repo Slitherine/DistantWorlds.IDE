@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 
@@ -16,9 +15,9 @@ internal sealed class ConsoleOptionsMonitor : IOptionsMonitor<ConsoleLoggerOptio
 
   public ConsoleLoggerOptions CurrentValue => _consoleLoggerOptions;
 
-  public ConsoleLoggerOptions Get(string name) => _consoleLoggerOptions;
+  public ConsoleLoggerOptions Get(string? name) => _consoleLoggerOptions;
 
-  public IDisposable OnChange(Action<ConsoleLoggerOptions, string> listener)
+  public IDisposable? OnChange(Action<ConsoleLoggerOptions, string> listener)
     => null;
 
 }

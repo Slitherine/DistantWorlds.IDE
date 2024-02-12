@@ -5,20 +5,48 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <RollForward>LatestMajor</RollForward>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <DnneMSBuildLogging>high</DnneMSBuildLogging>
+        <DnneRuntimeIdentifier>$(RuntimeIdentifier)</DnneRuntimeIdentifier>
+        <DnneNativeBinaryName>DistantWorlds.IDE.Interop</DnneNativeBinaryName>
+        <DnneGenerateExports>true</DnneGenerateExports>
+        <DnneBuildExports>true</DnneBuildExports>
+        <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
+        <DnneGenRollForward>$(RollForward)</DnneGenRollForward>
+        <DnneSelfContained_Experimental>true</DnneSelfContained_Experimental>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BCnEncoder.Net" Version="2.1.0" />
+        <None Remove="Tests\**\*.*"/>
+        <Content Remove="Tests\**\*.*"/>
+        <Compile Remove="Tests\**\*.*"/>
+        <EmbeddedResource Remove="Tests\**\*.*"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="BCnEncoder.Net" Version="2.1.0"/>
+        <PackageReference Include="DNNE" Version="2.0.6"/>
         <PackageReference Include="Eto.Forms" Version="2.8.2"/>
         <PackageReference Include="Eto.Platform.Gtk" Version="2.8.2"/>
         <PackageReference Include="GameFinder" Version="4.0.0"/>
         <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" PrivateAssets="all"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.0" />
         <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.8.14"/>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.0" />
-        <PackageReference Include="Stride.Core" Version="$(StrideVersion)" />
-        <PackageReference Include="Stride.Core.Serialization" Version="$(StrideVersion)" />
-        <PackageReference Include="Stride.Graphics" Version="$(StrideVersion)" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.1.0-prerelease.1"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="OmniSharp.Extensions.LanguageClient" Version="0.19.9"/>
+        <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.0"/>
+        <PackageReference Include="Stride.Core" Version="$(StrideVersion)"/>
+        <PackageReference Include="Stride.Core.Serialization" Version="$(StrideVersion)"/>
+        <PackageReference Include="Stride.Graphics" Version="$(StrideVersion)"/>
+        <PackageReference Include="System.IO.Pipelines" Version="8.0.0"/>
     </ItemGroup>
-
 </Project>
