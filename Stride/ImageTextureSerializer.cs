@@ -41,15 +41,15 @@ internal class ImageTextureSerializer : ContentSerializerBase<Image> {
 
   // internal unsafe Image(ImageDescription description, IntPtr dataPointer, int offset, GCHandle? handle, bool bufferIsDisposable, PitchFlags pitchFlags = PitchFlags.None, int rowStride = 0)
   private static readonly ConstructorInfo _ImageCtor
-    = typeof(Image).GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {
-      typeof(ImageDescription),
+    = typeof(Image).GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, [
+        typeof(ImageDescription),
       typeof(IntPtr),
       typeof(int),
       typeof(GCHandle?),
       typeof(bool),
       TypeOfPitchFlags,
       typeof(int)
-    }, null)!;
+    ], null)!;
 
   /*
   private static readonly object NonePitchFlags = Enum.ToObject(TypeOfPitchFlags, 0);

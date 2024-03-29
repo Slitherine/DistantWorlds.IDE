@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using GameFinder.RegistryUtils;
 using GameFinder.Common;
@@ -6,6 +8,7 @@ using GameFinder.StoreHandlers.GOG;
 using GameFinder.StoreHandlers.Steam;
 using GameFinder.StoreHandlers.Steam.Models.ValueTypes;
 using Microsoft.Win32;
+using MonoMod.Utils;
 using NexusMods.Paths;
 using RegistryHive = GameFinder.RegistryUtils.RegistryHive;
 using RegistryValueKind = Microsoft.Win32.RegistryValueKind;
@@ -42,7 +45,7 @@ public static partial class Dw2Env {
 
     public static IGame? Game;
 
-    private static OpenFileDialog _openFileDialog;
+    private static OpenFileDialog OpenFileDialog;
 
     public static readonly string DefaultMatrixInstallerGameDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
@@ -135,10 +138,39 @@ public static partial class Dw2Env {
         return true;
     }
 
+    private static unsafe T GetOrCreate<T>(string fieldName, in T? field, Func<T> createFn) where T : class {
+        if (field is not null)
+            return field;
+
+        var type = typeof(Dw2Env);
+        var asm = type.Assembly;
+        var ctx = AssemblyLoadContext.GetLoadContext(asm);
+        if (AssemblyLoadContext.Default == ctx)
+            return createFn();
+
+        var defAsm = AssemblyLoadContext.Default.LoadFromAssemblyName(asm.GetName());
+        var defType = defAsm.GetType(type.FullName!);
+        var defMethod = defType!.GetMethod($"GetOrCreate{fieldName}", BindingFlags.NonPublic | BindingFlags.Static);
+        var defFnPtr = defMethod!.GetLdftnPointer();
+        return ((delegate *<T>)defFnPtr)();
+    }
+
+    private static unsafe Eto.GtkSharp.Platform GetOrCreateEtoPlatform() {
+        return GetOrCreate(nameof(EtoPlatform), EtoPlatform, () => new());
+    }
+
+    private static unsafe Application GetOrCreateApplication() {
+        return GetOrCreate(nameof(Application), Application, () => new(EtoPlatform));
+    }
+
+    private static unsafe OpenFileDialog GetOrCreateOpenFileDialog() {
+        return GetOrCreate(nameof(OpenFileDialog), OpenFileDialog, () => new());
+    }
+
     static Dw2Env() {
-        EtoPlatform = new Eto.GtkSharp.Platform();
-        Application = new Application(EtoPlatform);
-        _openFileDialog = new OpenFileDialog();
+        EtoPlatform = GetOrCreateEtoPlatform();
+        Application = GetOrCreateApplication();
+        OpenFileDialog = GetOrCreateOpenFileDialog();
 
         if (OperatingSystem.IsWindows() && UserChosenGameDirectory is not null) {
             GameDirectory = UserChosenGameDirectory;

@@ -1,14 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO.MemoryMappedFiles;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using BCnEncoder.Shared;
 using DistantWorlds.IDE.ImageSharp;
 using JetBrains.Annotations;
 using Microsoft.Toolkit.HighPerformance;
-using OneOf.Types;
-using Pango;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Stride.Core;
@@ -183,7 +181,7 @@ public static class BundleManager {
         //fullPath = fullPath.Replace('\\', '/');
 
         if (!BundlePaths.TryGetValue(bundleName, out var bundlePaths))
-            BundlePaths[bundleName] = new() { fullPath };
+            BundlePaths[bundleName] = [fullPath];
         else {
             if (!bundlePaths.Add(fullPath)) // already loaded
                 return bundleName;
@@ -212,7 +210,7 @@ public static class BundleManager {
                     $"/{root}/{bundleName}.bundle")
                 .ConfigureAwait(false).GetAwaiter().GetResult();
 
-            HashSet<string> files = new();
+            HashSet<string> files = [];
             foreach (var objId in Content.FileProvider.ObjectDatabase.BundleBackend.EnumerateObjects()) {
                 // preload some data 
                 try {
@@ -246,8 +244,25 @@ public static class BundleManager {
     public static Dictionary<ObjectId, BundleOdbBackend.ObjectInfo>? ObjectInfos { get; private set; }
 
     public static ObjectId? GetObjectId(string path) {
-        if (Content.FileProvider.ContentIndexMap.TryGetValue(path, out var id))
-            return id;
+        if (!Content.FileProvider.ContentIndexMap.TryGetValue(path, out var id))
+            return null;
+
+        ObjectUrlCache[id] = path;
+        return id;
+    }
+
+    private static readonly ConcurrentDictionary<ObjectId, string> ObjectUrlCache
+        = new();
+
+    public static string? GetObjectUrl(in ObjectId objectId) {
+        var objIdCopy = objectId;
+
+        if (ObjectUrlCache.TryGetValue(objIdCopy, out var url))
+            return url;
+
+        var results = Content.FileProvider.ContentIndexMap.SearchValues(kv => kv.Value == objIdCopy);
+        foreach (var result in results)
+            return result.Key;
 
         return null;
     }
@@ -334,6 +349,12 @@ public static class BundleManager {
         return InstantiateObject(url, objId.Value);
     }
 
+    public static object? InstantiateObject(in ObjectId objId)
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        => Unsafe.IsNullRef(in objId)
+            ? null
+            : InstantiateObject(null, objId);
+
     private const BindingFlags AnyInstanceBindingFlags
         = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
 
@@ -355,7 +376,7 @@ public static class BundleManager {
             TypeContentSzrCtx.GetMethod("SerializeContent", AnyInstanceBindingFlags)!
                 .MethodHandle.GetFunctionPointer();
 
-    private static unsafe object? InstantiateObject(string url, ObjectId objectId) {
+    private static unsafe object? InstantiateObject(string? url, in ObjectId objectId) {
         // note: if url is wrong, embedded references will fail to resolve or be wrong
 
         using var srcStream = Content.FileProvider.ObjectDatabase.OpenStream(objectId);
@@ -399,7 +420,7 @@ public static class BundleManager {
 
         var contentSerializerContext = (ContentSerializerContext)
             Activator.CreateInstance(TypeContentSzrCtx, AnyInstanceBindingFlags, null,
-                new object[] { url, ArchiveMode.Deserialize, Content }, null)!;
+                [url ?? GetObjectUrl(objectId) ?? "", ArchiveMode.Deserialize, Content], null)!;
 
         // Read chunk references
         if (chunkHeader != null && chunkHeader.OffsetToReferences != -1) {

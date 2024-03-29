@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Threading;
 namespace DistantWorlds.IDE;
 
 [PublicAPI]
-public static class Helpers {
+public static partial class Helpers {
 
     // ReSharper disable once IdentifierTypo
     public static JoinableTaskContext SharedJoinableTaskContext = new JoinableTaskContext();

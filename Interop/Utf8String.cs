@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using SharpDX.Text;
 using Encoding = System.Text.Encoding;
 
 namespace DistantWorlds.IDE.Interop;

@@ -9,6 +9,7 @@
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <RollForward>LatestMajor</RollForward>
+        <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -27,6 +28,11 @@
         <Content Remove="Tests\**\*.*"/>
         <Compile Remove="Tests\**\*.*"/>
         <EmbeddedResource Remove="Tests\**\*.*"/>
+
+        <None Remove="dist\**\*.*"/>
+        <Content Remove="dist\**\*.*"/>
+        <Compile Remove="dist\**" />
+        <EmbeddedResource Remove="dist\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,7 +49,7 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
         <PackageReference Include="OmniSharp.Extensions.LanguageClient" Version="0.19.9"/>
         <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9"/>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.0"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3" />
         <PackageReference Include="Stride.Core" Version="$(StrideVersion)"/>
         <PackageReference Include="Stride.Core.Serialization" Version="$(StrideVersion)"/>
         <PackageReference Include="Stride.Graphics" Version="$(StrideVersion)"/>
