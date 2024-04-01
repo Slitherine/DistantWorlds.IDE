@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -10,6 +10,11 @@
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <RollForward>LatestMajor</RollForward>
         <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+        <UseWpf>true</UseWpf>
+        <UseWindowsForms>true</UseWindowsForms>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <OutputType>Library</OutputType>
+        <DefineConstants>$(DefineConstants);DW2IDE_WPF</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -38,8 +43,11 @@
     <ItemGroup>
         <PackageReference Include="BCnEncoder.Net" Version="2.1.0"/>
         <PackageReference Include="DNNE" Version="2.0.6"/>
-        <PackageReference Include="Eto.Forms" Version="2.8.2"/>
-        <PackageReference Include="Eto.Platform.Gtk" Version="2.8.2"/>
+        <PackageReference Include="Eto.Forms" Version="2.8.3" />
+        <PackageReference Include="Eto.Platform.Windows" Version="2.8.3" Condition="$(DefineConstants.Contains('DW2IDE_WINFORMS'))"/>
+        <PackageReference Include="Eto.Platform.Direct2D" Version="2.8.3" Condition="$(DefineConstants.Contains('DW2IDE_D2D'))"/>
+        <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3" Condition="$(DefineConstants.Contains('DW2IDE_GTK'))" />
+        <PackageReference Include="Eto.Platform.Wpf" Version="2.8.3" Condition="$(DefineConstants.Contains('DW2IDE_WPF'))" />
         <PackageReference Include="GameFinder" Version="4.0.0"/>
         <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" PrivateAssets="all"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0"/>

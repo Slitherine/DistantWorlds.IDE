@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
@@ -7,10 +8,11 @@ using GameFinder.Common;
 using GameFinder.StoreHandlers.GOG;
 using GameFinder.StoreHandlers.Steam;
 using GameFinder.StoreHandlers.Steam.Models.ValueTypes;
-using Microsoft.Win32;
 using MonoMod.Utils;
 using NexusMods.Paths;
 using RegistryHive = GameFinder.RegistryUtils.RegistryHive;
+using Registry = Microsoft.Win32.Registry;
+using RegistryValueOptions = Microsoft.Win32.RegistryValueOptions;
 using RegistryValueKind = Microsoft.Win32.RegistryValueKind;
 using RegistryView = GameFinder.RegistryUtils.RegistryView;
 
@@ -101,6 +103,50 @@ public static partial class Dw2Env {
 
         return true;
     }
+    private static readonly AssemblyLoadContext CurrentContext
+        = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly())!;
+
+
+    public static readonly bool IsDefaultContext
+        = AssemblyLoadContext.Default
+        == CurrentContext;
+
+    public static readonly SimpleSynchronizationContext GuiThreadContext
+        = new();
+
+    public static readonly Thread GuiThread = IsDefaultContext ? new(GuiThreadWorker) {
+        Name = "GUI Thread",
+        IsBackground = true
+    } : null!;
+
+    private static void GuiThreadWorker() {
+        SynchronizationContext.SetSynchronizationContext(GuiThreadContext);
+        if (!IsDefaultContext)
+            throw new InvalidOperationException("GUI thread must be started from the default context");
+        
+        for (;;) {
+            try {
+                if (GuiThreadContext.WaitForWork(125))
+                    GuiThreadContext.ExecuteQueue();
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken == GuiThreadContext.CancellationToken) {
+                break;
+            }
+            catch (Exception e) {
+                Trace.TraceError("Unhandled exception on GUI thread:\n{0}", e);
+            }
+        }
+    }
+
+    private static void StartGuiThread() {
+        if (!IsDefaultContext || GuiThread.IsAlive)
+            return;
+
+        GuiThread.SetApartmentState(ApartmentState.STA);
+        CurrentContext.Unloading += _ => GuiThreadContext.Cancel();
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => GuiThreadContext.Cancel();
+        GuiThread.Start();
+    }
 
     public static bool PromptForGameDirectory(bool cancelIsExit = false) {
         var choice = MessageBox.Show(
@@ -121,14 +167,18 @@ public static partial class Dw2Env {
         }
 
         var ofdDir = GameDirectory ?? Environment.CurrentDirectory;
-        var ofd = new OpenFileDialog {
-            Filters = { "Distant Worlds 2 Executable|DistantWorlds2.exe", },
-            Title = "Select Distant Worlds 2 Executable",
-            Directory = new(ofdDir),
-            CheckFileExists = true,
-            FileName = Path.Combine(ofdDir, "DistantWorlds2.exe")
-        };
-        var result = ofd.ShowDialog(null);
+        OpenFileDialog ofd = null!;
+        // ReSharper disable once HeapView.CanAvoidClosure
+        var result = GuiThreadContext.Send(() => {
+            ofd = new OpenFileDialog {
+                Filters = { "Distant Worlds 2 Executable|DistantWorlds2.exe", },
+                Title = "Select Distant Worlds 2 Executable",
+                Directory = new(ofdDir),
+                CheckFileExists = true,
+                FileName = Path.Combine(ofdDir, "DistantWorlds2.exe")
+            };
+            return ofd.ShowDialog(null);
+        });
         if (result != DialogResult.Cancel) {
             GameDirectory = Path.GetDirectoryName(ofd.FileName);
             if (OperatingSystem.IsWindows())
@@ -138,36 +188,66 @@ public static partial class Dw2Env {
         return true;
     }
 
-    private static unsafe T GetOrCreate<T>(string fieldName, in T? field, Func<T> createFn) where T : class {
+    private static unsafe T GetOrCreate<T>(Expression<Func<T>> proxyExpr, [AllowNull] ref T field,
+        delegate * <T> createFn) where T : class {
         if (field is not null)
             return field;
 
-        var type = typeof(Dw2Env);
-        var asm = type.Assembly;
-        var ctx = AssemblyLoadContext.GetLoadContext(asm);
-        if (AssemblyLoadContext.Default == ctx)
+        var asm = Assembly.GetExecutingAssembly();
+        if (IsDefaultContext)
             return createFn();
 
+        if (proxyExpr is null)
+            throw new InvalidOperationException("Proxy expression must be provided");
+
         var defAsm = AssemblyLoadContext.Default.LoadFromAssemblyName(asm.GetName());
-        var defType = defAsm.GetType(type.FullName!);
-        var defMethod = defType!.GetMethod($"GetOrCreate{fieldName}", BindingFlags.NonPublic | BindingFlags.Static);
-        var defFnPtr = defMethod!.GetLdftnPointer();
-        return ((delegate *<T>)defFnPtr)();
+        if (proxyExpr.Body is not MethodCallExpression { Arguments.Count: 0 } callExpr)
+            throw new InvalidOperationException("Proxy expression must be a method call with no arguments");
+
+        var proxyFnToken = callExpr.Method.MetadataToken;
+        var defMethod = defAsm.ManifestModule.ResolveMethod(proxyFnToken)!;
+        if (!defMethod.IsStatic)
+            throw new InvalidOperationException("Proxy method must be static");
+
+        var fnPtr = (delegate *<T>)defMethod.MethodHandle.GetFunctionPointer();
+
+        return field = fnPtr();
     }
 
-    private static unsafe Eto.GtkSharp.Platform GetOrCreateEtoPlatform() {
-        return GetOrCreate(nameof(EtoPlatform), EtoPlatform, () => new());
+    private static readonly Type EtoPlatformType
+#if DW2IDE_WPF
+        = typeof(Eto.Wpf.Platform);
+#elif DW2IDE_WINFORMS
+        = typeof(Eto.WinForms.Platform);
+#elif DW2IDE_D2D
+        = typeof(Eto.Direct2D.Platform);
+#elif DW2IDE_GTK
+        = typeof(Eto.GtkSharp.Platform);
+#else
+#error Specify an Eto GUI toolkit
+#endif
+
+    private static unsafe Eto.Platform GetOrCreateEtoPlatform() {
+        return GetOrCreate(() => GetOrCreateEtoPlatform(), ref EtoPlatform, &Factory);
+
+        static Eto.Platform Factory() => (Eto.Platform)Activator.CreateInstance(EtoPlatformType)!;
     }
 
     private static unsafe Application GetOrCreateApplication() {
-        return GetOrCreate(nameof(Application), Application, () => new(EtoPlatform));
+        return GetOrCreate(() => GetOrCreateApplication(), ref Application, &Factory);
+
+        static Application Factory() => new(EtoPlatform);
     }
 
     private static unsafe OpenFileDialog GetOrCreateOpenFileDialog() {
-        return GetOrCreate(nameof(OpenFileDialog), OpenFileDialog, () => new());
+        return GetOrCreate(() => GetOrCreateOpenFileDialog(), ref OpenFileDialog, &Factory);
+
+        static OpenFileDialog Factory() => new();
     }
 
     static Dw2Env() {
+        StartGuiThread();
+
         EtoPlatform = GetOrCreateEtoPlatform();
         Application = GetOrCreateApplication();
         OpenFileDialog = GetOrCreateOpenFileDialog();
@@ -220,9 +300,9 @@ public static partial class Dw2Env {
         PromptForGameDirectory(true);
     }
 
-    public static readonly Application Application;
+    public static Application Application;
 
-    internal static Eto.GtkSharp.Platform EtoPlatform;
+    internal static Eto.Platform EtoPlatform;
 
     /// <see cref="M:DistantWorlds.IDE.Dw2Env.#cctor"/>
     public static void Initialize() {

@@ -1,14 +1,12 @@
-using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using DistantWorlds.IDE;
 using FluentAssertions;
-using Gtk;
 
 namespace Tests;
 
+[Explicit]
 public class ExportTests {
 
     /// <see cref="Exports.Initialize"/>
@@ -124,4 +122,69 @@ public class ExportTests {
         TestContext.Out.WriteLine(actual);
     }
 
+    /// <see cref="Exports.GetGameDirectory"/>
+    [Test, Order(3)]
+    public unsafe void GetGameDirectory() {
+        var asmLoc = typeof(Dw2Env).Assembly.Location;
+        var interopLoc = Path.ChangeExtension(asmLoc, ".Interop.dll");
+        File.Exists(interopLoc).Should().BeTrue();
+        var nativeLib = NativeLibrary.Load(interopLoc);
+        nativeLib.Should().NotBeNull();
+        var getGameDirectory = NativeLibrary.GetExport(nativeLib, "GetGameDirectory");
+        getGameDirectory.Should().NotBeNull();
+        // attempted to call a UnmanagedCallersOnly method from managed code
+        //var pfn = (delegate* unmanaged[Cdecl, SuppressGCTransition]<char*, int, int>)getUserChosenGameDirectory;
+        var pfn = (delegate* unmanaged[Cdecl]<char*, int, int>)getGameDirectory;
+
+        var needed = pfn(null, 0);
+
+        needed.Should().BeLessThan(0);
+
+        var size = -needed;
+
+        var buffer = stackalloc char[size];
+        var written = pfn(buffer, size);
+
+        written.Should().Be(size);
+        buffer[written - 1].Should().Be('\0');
+
+        var span = new ReadOnlySpan<char>(buffer, written).TrimEnd('\0');
+        var actual = new string(span);
+        actual.Should().NotBeNullOrWhiteSpace();
+        
+        TestContext.Out.WriteLine(actual);
+    }
+    
+    /// <see cref="Exports.GetUserChosenGameDirectory"/>
+    [Test, Order(4)]
+    public unsafe void GetUserChosenGameDirectory() {
+        var asmLoc = typeof(Dw2Env).Assembly.Location;
+        var interopLoc = Path.ChangeExtension(asmLoc, ".Interop.dll");
+        File.Exists(interopLoc).Should().BeTrue();
+        var nativeLib = NativeLibrary.Load(interopLoc);
+        nativeLib.Should().NotBeNull();
+        var getUserChosenGameDirectory = NativeLibrary.GetExport(nativeLib, "GetUserChosenGameDirectory");
+        getUserChosenGameDirectory.Should().NotBeNull();
+        // attempted to call a UnmanagedCallersOnly method from managed code
+        //var pfn = (delegate* unmanaged[Cdecl, SuppressGCTransition]<char*, int, int>)getUserChosenGameDirectory;
+        var pfn = (delegate* unmanaged[Cdecl]<char*, int, int>)getUserChosenGameDirectory;
+
+        var needed = pfn(null, 0);
+
+        needed.Should().BeLessThan(0);
+
+        var size = -needed;
+
+        var buffer = stackalloc char[size];
+        var written = pfn(buffer, size);
+
+        written.Should().Be(size);
+        buffer[written - 1].Should().Be('\0');
+
+        var span = new ReadOnlySpan<char>(buffer, written).TrimEnd('\0');
+        var actual = new string(span);
+        actual.Should().NotBeNullOrWhiteSpace();
+        
+        TestContext.Out.WriteLine(actual);
+    }
 }
