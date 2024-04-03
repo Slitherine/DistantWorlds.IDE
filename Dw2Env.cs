@@ -118,7 +118,7 @@ public static partial class Dw2Env {
 
 #if DW2IDE_GUI_THREAD_NATIVE
     public static readonly unsafe WinNativeThread GuiThread
-        = WinNativeThread.Create<Empty>(&GuiThreadWorker);
+        = WinNativeThread.Create<Empty>(&GuiContext.GuiThreadWorker);
 #else
     public static readonly unsafe Thread GuiThread
         = new Thread(GuiThreadWorker) {
@@ -126,35 +126,6 @@ public static partial class Dw2Env {
             Name = "DW2IDE GUI Thread"
         };
 #endif
-
-#if DW2IDE_GUI_THREAD_NATIVE
-    [UnmanagedCallersOnly]
-    private static unsafe void GuiThreadWorker(Empty* _) {
-        var thread = Thread.CurrentThread;
-        thread.Name = "DW2IDE GUI Thread";
-        thread.SetApartmentState(ApartmentState.STA);
-#else
-    private static void GuiThreadWorker(object? _) {
-#endif
-        SynchronizationContext.SetSynchronizationContext(GuiThreadContext);
-        if (!IsDefaultContext)
-            throw new InvalidOperationException("GUI thread must be started from the default context");
-
-        for (;;) {
-            try {
-                if (GuiThreadContext.WaitForWork(125))
-                    GuiThreadContext.ExecuteQueue();
-            }
-            catch (OperationCanceledException oce) when (oce.CancellationToken == GuiThreadContext.CancellationToken) {
-                break;
-            }
-            catch (Exception e) {
-                Trace.TraceError("Unhandled exception on GUI thread:\n{0}", e);
-            }
-        }
-
-        Trace.TraceInformation("GUI thread exiting");
-    }
 
     private static void StartGuiThread() {
         if (!IsDefaultContext || GuiThread.IsAlive)
