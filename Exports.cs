@@ -30,10 +30,9 @@ public static class Exports {
 
     private static readonly Assembly Assembly = Type.Assembly;
 
-    private static readonly AssemblyLoadContext LoadContext =
-        AssemblyLoadContext.GetLoadContext(Assembly)!;
+    private static AssemblyLoadContext LoadContext => IsolationEnvironment.Current;
 
-    private static readonly bool IsInDefaultContext = LoadContext == AssemblyLoadContext.Default;
+    private static bool IsInDefaultContext => IsolationEnvironment.IsDefault;
 
     private static int _isolationContextCounter;
 
@@ -388,9 +387,7 @@ public static class Exports {
         }
 
         //var ctx = new AssemblyLoadContext(Guid.NewGuid().ToString("N"), true);
-        var ctx = (AssemblyLoadContext)
-            Activator.CreateInstance(IsoLoadCtxType,
-                Assembly.Location)!;
+        var ctx = IsolationEnvironment.Create(Assembly.Location);
         //ctx.Resolving += ResolveAssembliesCrossLoadContext;
         var pFn = GetFunctionPointerFromLoadContext(ctx,
             Type.FullName!, nameof(GetIsolationContextIdImpl));
@@ -1239,9 +1236,6 @@ public static class Exports {
 
     [ThreadStatic]
     private static (Image? Image, string? Value) _imageTextureTypeCache;
-
-    private static readonly Type IsoLoadCtxType = Type.GetType
-        ("Internal.Runtime.InteropServices.IsolatedComponentLoadContext")!;
 
     [UnmanagedCallersOnly, Obsolete("Do not call from managed code.", true)]
     public static unsafe int GetImageTextureType(nint handle, char* pBuffer, int bufferSize)

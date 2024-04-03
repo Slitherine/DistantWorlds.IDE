@@ -108,20 +108,12 @@ public static partial class Dw2Env {
         return true;
     }
 
-    private static readonly AssemblyLoadContext CurrentContext
-        = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly())!;
-
-    public static readonly bool IsDefaultContext
-        = AssemblyLoadContext.Default
-        == CurrentContext;
-
-
     private static void StartGuiThread() {
-        if (!IsDefaultContext || GuiThread.IsAlive)
+        if (!IsolationEnvironment.IsDefault || GuiThread.IsAlive)
             return;
 
         //GuiThread.SetApartmentState(ApartmentState.STA);
-        CurrentContext.Unloading += _ => GuiThreadContext.Cancel();
+        IsolationEnvironment.Current.Unloading += _ => GuiThreadContext.Cancel();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => GuiThreadContext.Cancel();
 #if DW2IDE_GUI_THREAD_NATIVE
         GuiThread.Resume();
@@ -185,7 +177,7 @@ public static partial class Dw2Env {
             return field;
 
         var asm = Assembly.GetExecutingAssembly();
-        if (IsDefaultContext)
+        if (IsolationEnvironment.IsDefault)
             return createFn();
 
         if (proxyExpr is null)

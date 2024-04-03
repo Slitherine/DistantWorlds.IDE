@@ -33,7 +33,7 @@ public static class GuiContext {
     public static void GuiThreadWorker(object? _) {
 #endif
         SynchronizationContext.SetSynchronizationContext(GuiThreadContext);
-        if (!Dw2Env.IsDefaultContext)
+        if (!IsolationEnvironment.IsDefault)
             throw new InvalidOperationException("GUI thread must be started from the default context");
 
         for (;;) {
