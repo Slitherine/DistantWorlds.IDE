@@ -18,6 +18,8 @@ using RegistryValueOptions = Microsoft.Win32.RegistryValueOptions;
 using RegistryValueKind = Microsoft.Win32.RegistryValueKind;
 using RegistryView = GameFinder.RegistryUtils.RegistryView;
 
+using static DistantWorlds.IDE.GuiContext;
+
 namespace DistantWorlds.IDE;
 
 [SuppressMessage("Usage", "VSTHRD001:Avoid legacy thread switching APIs")]
@@ -113,19 +115,6 @@ public static partial class Dw2Env {
         = AssemblyLoadContext.Default
         == CurrentContext;
 
-    public static readonly SimpleSynchronizationContext GuiThreadContext
-        = new();
-
-#if DW2IDE_GUI_THREAD_NATIVE
-    public static readonly unsafe WinNativeThread GuiThread
-        = WinNativeThread.Create<Empty>(&GuiContext.GuiThreadWorker);
-#else
-    public static readonly unsafe Thread GuiThread
-        = new Thread(GuiThreadWorker) {
-            IsBackground = true,
-            Name = "DW2IDE GUI Thread"
-        };
-#endif
 
     private static void StartGuiThread() {
         if (!IsDefaultContext || GuiThread.IsAlive)
