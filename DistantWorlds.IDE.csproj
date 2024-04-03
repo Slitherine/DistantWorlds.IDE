@@ -14,7 +14,7 @@
         <UseWindowsForms>true</UseWindowsForms>
         <ImplicitUsings>disable</ImplicitUsings>
         <OutputType>Library</OutputType>
-        <DefineConstants>$(DefineConstants);DW2IDE_WPF</DefineConstants>
+        <DefineConstants>$(DefineConstants);DW2IDE_WPF;DW2IDE_GUI_THREAD_NATIVE</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup>

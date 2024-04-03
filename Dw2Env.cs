@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using GameFinder.RegistryUtils;
@@ -103,9 +105,9 @@ public static partial class Dw2Env {
 
         return true;
     }
+
     private static readonly AssemblyLoadContext CurrentContext
         = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly())!;
-
 
     public static readonly bool IsDefaultContext
         = AssemblyLoadContext.Default
@@ -114,16 +116,30 @@ public static partial class Dw2Env {
     public static readonly SimpleSynchronizationContext GuiThreadContext
         = new();
 
-    public static readonly Thread GuiThread = IsDefaultContext ? new(GuiThreadWorker) {
-        Name = "GUI Thread",
-        IsBackground = true
-    } : null!;
+#if DW2IDE_GUI_THREAD_NATIVE
+    public static readonly unsafe WinNativeThread GuiThread
+        = WinNativeThread.Create<Empty>(&GuiThreadWorker);
+#else
+    public static readonly unsafe Thread GuiThread
+        = new Thread(GuiThreadWorker) {
+            IsBackground = true,
+            Name = "DW2IDE GUI Thread"
+        };
+#endif
 
-    private static void GuiThreadWorker() {
+#if DW2IDE_GUI_THREAD_NATIVE
+    [UnmanagedCallersOnly]
+    private static unsafe void GuiThreadWorker(Empty* _) {
+        var thread = Thread.CurrentThread;
+        thread.Name = "DW2IDE GUI Thread";
+        thread.SetApartmentState(ApartmentState.STA);
+#else
+    private static void GuiThreadWorker(object? _) {
+#endif
         SynchronizationContext.SetSynchronizationContext(GuiThreadContext);
         if (!IsDefaultContext)
             throw new InvalidOperationException("GUI thread must be started from the default context");
-        
+
         for (;;) {
             try {
                 if (GuiThreadContext.WaitForWork(125))
@@ -136,16 +152,31 @@ public static partial class Dw2Env {
                 Trace.TraceError("Unhandled exception on GUI thread:\n{0}", e);
             }
         }
+
+        Trace.TraceInformation("GUI thread exiting");
     }
 
     private static void StartGuiThread() {
         if (!IsDefaultContext || GuiThread.IsAlive)
             return;
 
-        GuiThread.SetApartmentState(ApartmentState.STA);
+        //GuiThread.SetApartmentState(ApartmentState.STA);
         CurrentContext.Unloading += _ => GuiThreadContext.Cancel();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => GuiThreadContext.Cancel();
+#if DW2IDE_GUI_THREAD_NATIVE
+        GuiThread.Resume();
+        GuiThread.Description = "DW2IDE GUI Thread";
+#else
+        GuiThread.SetApartmentState(ApartmentState.STA);
         GuiThread.Start();
+#endif
+    }
+
+    private static void PrepareMethod(Expression<Action> expr) {
+        if (expr.Body is not MethodCallExpression callExpr)
+            throw new InvalidOperationException("Proxy expression must be a method call with no arguments");
+
+        RuntimeHelpers.PrepareMethod(callExpr.Method.MethodHandle);
     }
 
     public static bool PromptForGameDirectory(bool cancelIsExit = false) {
@@ -170,7 +201,7 @@ public static partial class Dw2Env {
         OpenFileDialog ofd = null!;
         // ReSharper disable once HeapView.CanAvoidClosure
         var result = GuiThreadContext.Send(() => {
-            ofd = new OpenFileDialog {
+            ofd = new() {
                 Filters = { "Distant Worlds 2 Executable|DistantWorlds2.exe", },
                 Title = "Select Distant Worlds 2 Executable",
                 Directory = new(ofdDir),
